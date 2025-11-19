@@ -1,0 +1,7 @@
+[2025-10-25 06:25:55] sendVerificationLinkEmail-exception: SMTP Error: Could not authenticate.
+[2025-10-25 06:28:04] sendVerificationLinkEmail-exception: SMTP Error: Could not authenticate.
+[2025-10-25 06:30:25] sendVerificationLinkEmail-exception: SMTP Error: Could not authenticate.
+[2025-10-25 06:37:39] sendVerificationLinkEmail-exception: SMTP Error: Could not authenticate.
+[2025-11-13 10:40:25] sendVerificationLinkEmail-exception: SMTP Error: Could not connect to SMTP host. Failed to connect to server SMTP server error: Failed to connect to server Additional SMTP info: php_network_getaddresses: getaddrinfo for smtp.gmail.com failed: No such host is known. 
+[2025-11-13 10:41:07] sendVerificationLinkEmail-exception: SMTP Error: Could not connect to SMTP host. Failed to connect to server SMTP server error: Failed to connect to server Additional SMTP info: php_network_getaddresses: getaddrinfo for smtp.gmail.com failed: No such host is known. 
+[2025-11-19 03:19:09] sendTransactionalEmail-exception: SMTP Error: Could not authenticate. SMTP server error: Called QUIT without being connected
