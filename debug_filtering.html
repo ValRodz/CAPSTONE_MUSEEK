@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Price Filtering Logic</title>
+    <style>
+        .debug-card {
+            border: 2px solid #333;
+            padding: 15px;
+            margin: 10px;
+            display: inline-block;
+            background: #f5f5f5;
+        }
+        .debug-info {
+            font-family: monospace;
+            font-size: 12px;
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            margin: 5px 0;
+            white-space: pre;
+        }
+        .hidden { display: none; }
+        .problem { border-color: red; background: #ffe0e0; }
+        .ok { border-color: green; background: #e0ffe0; }
+    </style>
+</head>
+<body>
+    <h1>Debug Price Filtering Logic</h1>
+    
+    <div>
+        <label>Price Min: <input type="range" id="debugPriceMin" min="0" max="5000" value="0" step="50"></label>
+        <span id="debugPriceMinLabel">0</span>
+    </div>
+    <div>
+        <label>Price Max: <input type="range" id="debugPriceMax" min="0" max="5000" value="5000" step="50"></label>
+        <span id="debugPriceMaxLabel">5000</span>
+    </div>
+    
+    <button onclick="debugFiltering()">Debug Filtering</button>
+    <button onclick="resetDebug()">Reset</button>
+    
+    <div id="debugResults"></div>
+    
+    <script>
+        // Test data with edge cases
+        const debugStudios = [
+            { id: 1, name: "Studio A", min_price: 0, rating: 4.5 },
+            { id: 2, name: "Studio B", min_price: 100, rating: 3.8 },
+            { id: 3, name: "Studio C", min_price: 1000, rating: 4.2 },
+            { id: 4, name: "Studio D", min_price: 2500, rating: 4.9 },
+            { id: 5, name: "Studio E", min_price: 5000, rating: 3.5 },
+            { id: 6, name: "Studio F", min_price: null, rating: 4.0 }, // No services
+            { id: 7, name: "Studio G", min_price: 0, rating: 3.0 }, // Edge case: 0 price
+        ];
+        
+        function createDebugCards() {
+            const container = document.getElementById('debugResults');
+            container.innerHTML = '';
+            
+            debugStudios.forEach(studio => {
+                const card = document.createElement('div');
+                card.className = 'debug-card';
+                card.dataset.studioId = studio.id;
+                card.dataset.minPrice = studio.min_price !== null ? studio.min_price : '';
+                card.dataset.rating = studio.rating || '';
+                card.innerHTML = `
+                    <h3>${studio.name}</h3>
+                    <p>Price: ${studio.min_price !== null ? '₱' + studio.min_price : 'No services'}</p>
+                    <p>Rating: ${studio.rating}</p>
+                    <div id="debug-info-${studio.id}" class="debug-info"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function debugFiltering() {
+            const priceMin = parseFloat(document.getElementById('debugPriceMin').value);
+            const priceMax = parseFloat(document.getElementById('debugPriceMax').value);
+            
+            console.log('=== DEBUG FILTERING ===');
+            console.log('Filter values:', { priceMin, priceMax });
+            
+            const cards = document.querySelectorAll('.debug-card');
+            cards.forEach((card, index) => {
+                const studio = debugStudios[index];
+                const minPrice = card.dataset.minPrice !== '' ? parseFloat(card.dataset.minPrice) : null;
+                const hasServices = minPrice !== null;
+                
+                // Current logic from the website
+                const priceOk = (
+                    (priceMin === null || (minPrice !== null && minPrice >= priceMin)) &&
+                    (priceMax === null || (minPrice !== null && minPrice <= priceMax))
+                );
+                
+                const shouldShow = hasServices && priceOk;
+                
+                // Debug information
+                const debugInfo = {
+                    studio: studio.name,
+                    minPrice,
+                    hasServices,
+                    priceMin,
+                    priceMax,
+                    priceOk,
+                    shouldShow,
+                    conditions: {
+                        condition1: `(priceMin === null || (minPrice !== null && minPrice >= priceMin))`,
+                        condition1_result: (priceMin === null || (minPrice !== null && minPrice >= priceMin)),
+                        condition2: `(priceMax === null || (minPrice !== null && minPrice <= priceMax))`,
+                        condition2_result: (priceMax === null || (minPrice !== null && minPrice <= priceMax))
+                    }
+                };
+                
+                const debugElement = document.getElementById(`debug-info-${studio.id}`);
+                debugElement.textContent = JSON.stringify(debugInfo, null, 2);
+                
+                console.log(`${studio.name}:`, debugInfo);
+                
+                // Visual feedback
+                card.classList.remove('problem', 'ok');
+                if (shouldShow) {
+                    card.classList.add('ok');
+                } else {
+                    card.classList.add('problem');
+                }
+                
+                card.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        function resetDebug() {
+            document.getElementById('debugPriceMin').value = 0;
+            document.getElementById('debugPriceMax').value = 5000;
+            updateDebugLabels();
+            createDebugCards();
+        }
+        
+        function updateDebugLabels() {
+            document.getElementById('debugPriceMinLabel').textContent = document.getElementById('debugPriceMin').value;
+            document.getElementById('debugPriceMaxLabel').textContent = document.getElementById('debugPriceMax').value;
+        }
+        
+        // Initialize
+        document.getElementById('debugPriceMin').addEventListener('input', updateDebugLabels);
+        document.getElementById('debugPriceMax').addEventListener('input', updateDebugLabels);
+        createDebugCards();
+        updateDebugLabels();
+    </script>
+</body>
+</html>

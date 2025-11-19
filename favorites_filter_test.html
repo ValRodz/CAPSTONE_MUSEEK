@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favorites Filter Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; background: #222; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .status.ok { background: #004400; }
+        .status.error { background: #440000; }
+        .status.info { background: #004488; }
+        button { margin: 5px; padding: 10px 15px; background: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #f50919; }
+        #output { margin-top: 20px; padding: 10px; background: #000; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .test-card { background: #333; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .test-card.favorite { border-color: #e50914; background: #442222; }
+        .favorite-btn { background: none; border: 1px solid #666; color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .favorite-btn.active { background: #e50914; border-color: #e50914; }
+    </style>
+</head>
+<body>
+    <h1>Favorites Filter Test & Verification</h1>
+    
+    <div class="test-section">
+        <h3>Test Favorites Functionality</h3>
+        <p>This page tests the favorites filter functionality for authenticated users.</p>
+        
+        <div>
+            <button onclick="testFavoritesFilter()">Test Favorites Filter</button>
+            <button onclick="simulateAuthUser()">Simulate Authenticated User</button>
+            <button onclick="simulateGuestUser()">Simulate Guest User</button>
+            <button onclick="clearOutput()">Clear Output</button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Favorites Filter Status</h3>
+        <div id="statusDisplay"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Studio Cards</h3>
+        <div id="testCards" class="test-grid"></div>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        let testResults = [];
+        let favorites = new Set();
+        let isAuthenticated = false;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push({ time: timestamp, message: message, type: type });
+            updateOutput();
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function updateOutput() {
+            const output = document.getElementById('output');
+            output.innerHTML = testResults.map(result => 
+                `<div class="status ${result.type}">[${result.time}] ${result.message}</div>`
+            ).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            testResults = [];
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        function updateStatus() {
+            const statusDiv = document.getElementById('statusDisplay');
+            const status = {
+                authenticated: isAuthenticated,
+                favoritesCount: favorites.size,
+                favoritesList: Array.from(favorites)
+            };
+            
+            statusDiv.innerHTML = `
+                <div class="status ${isAuthenticated ? 'ok' : 'info'}">
+                    <strong>Authentication Status:</strong> ${isAuthenticated ? 'Authenticated User' : 'Guest User'}
+                </div>
+                <div class="status ${favorites.size > 0 ? 'ok' : 'info'}">
+                    <strong>Favorites Count:</strong> ${favorites.size}
+                    ${favorites.size > 0 ? `<br><strong>Favorites:</strong> ${Array.from(favorites).join(', ')}` : ''}
+                </div>
+            `;
+        }
+        
+        function createTestCards() {
+            const container = document.getElementById('testCards');
+            container.innerHTML = '';
+            
+            const studios = [
+                { id: 1, name: 'SkyTrack Studio', services: ['Recording', 'Mixing'] },
+                { id: 2, name: 'Musician\'s Garage', services: ['Rehearsal', 'Rental'] },
+                { id: 3, name: 'Mike Tambasen MusicLab', services: ['Mastering', 'Video Editing'] },
+                { id: 4, name: 'Sound Wave Studio', services: ['Recording', 'Production'] },
+                { id: 5, name: 'Beat Factory', services: ['Beat Making', 'Mixing'] }
+            ];
+            
+            studios.forEach(studio => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.dataset.studioId = studio.id;
+                if (favorites.has(String(studio.id))) {
+                    card.classList.add('favorite');
+                }
+                
+                card.innerHTML = `
+                    <h4>${studio.name}</h4>
+                    <p><strong>Services:</strong> ${studio.services.join(', ')}</p>
+                    <p><strong>ID:</strong> ${studio.id}</p>
+                    ${isAuthenticated ? `
+                        <button class="favorite-btn ${favorites.has(String(studio.id)) ? 'active' : ''}" 
+                                onclick="toggleFavorite(${studio.id})">
+                            ${favorites.has(String(studio.id)) ? '❤️ Favorited' : '🤍 Add to Favorites'}
+                        </button>
+                    ` : '<p><em>Login to add favorites</em></p>'}
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function toggleFavorite(studioId) {
+            if (!isAuthenticated) {
+                log('Cannot toggle favorite - user not authenticated', 'error');
+                return;
+            }
+            
+            const id = String(studioId);
+            if (favorites.has(id)) {
+                favorites.delete(id);
+                log(`Removed studio ${id} from favorites`, 'info');
+            } else {
+                favorites.add(id);
+                log(`Added studio ${id} to favorites`, 'ok');
+            }
+            
+            createTestCards();
+            updateStatus();
+            applyFavoritesFilter();
+        }
+        
+        function applyFavoritesFilter() {
+            const currentFilter = document.querySelector('[data-filter].active')?.dataset.filter || 'all';
+            log(`Applying filter: ${currentFilter}`);
+            
+            const cards = document.querySelectorAll('.test-card');
+            cards.forEach(card => {
+                const studioId = String(card.dataset.studioId);
+                let shouldShow = true;
+                
+                if (currentFilter === 'favorites') {
+                    shouldShow = favorites.has(studioId) && isAuthenticated;
+                }
+                
+                card.style.display = shouldShow ? '' : 'none';
+                log(`Studio ${studioId}: ${shouldShow ? 'SHOW' : 'HIDE'} (${currentFilter} filter)`);
+            });
+        }
+        
+        function simulateAuthUser() {
+            log('=== Simulating Authenticated User ===');
+            isAuthenticated = true;
+            favorites = new Set(['1', '3']); // Pre-select some favorites
+            log('User is now authenticated with pre-selected favorites: 1, 3', 'ok');
+            
+            // Create filter buttons
+            createFilterButtons();
+            createTestCards();
+            updateStatus();
+            applyFavoritesFilter();
+        }
+        
+        function simulateGuestUser() {
+            log('=== Simulating Guest User ===');
+            isAuthenticated = false;
+            favorites.clear();
+            log('User is now a guest (not authenticated)', 'info');
+            
+            createFilterButtons();
+            createTestCards();
+            updateStatus();
+            applyFavoritesFilter();
+        }
+        
+        function createFilterButtons() {
+            const container = document.querySelector('.test-section');
+            let filterContainer = document.getElementById('filterButtons');
+            
+            if (!filterContainer) {
+                filterContainer = document.createElement('div');
+                filterContainer.id = 'filterButtons';
+                filterContainer.className = 'test-section';
+                filterContainer.innerHTML = '<h3>Filter Options</h3>';
+                container.parentNode.insertBefore(filterContainer, container.nextSibling);
+            }
+            
+            filterContainer.innerHTML = `
+                <h3>Filter Options</h3>
+                <div style="margin: 10px 0;">
+                    ${isAuthenticated ? `
+                        <button class="toggle-btn ${document.querySelector('[data-filter="all"]')?.classList.contains('active') ? 'active' : ''}" 
+                                data-filter="all" onclick="setFilter('all')">
+                            <i class="fa fa-layer-group"></i> All Studios
+                        </button>
+                        <button class="toggle-btn ${document.querySelector('[data-filter="favorites"]')?.classList.contains('active') ? 'active' : ''}" 
+                                data-filter="favorites" onclick="setFilter('favorites')">
+                            <i class="fa fa-heart"></i> My Favorites
+                        </button>
+                    ` : '<p><em>Login to access favorites filter</em></p>'}
+                </div>
+            `;
+        }
+        
+        function setFilter(filter) {
+            log(`Setting filter to: ${filter}`);
+            
+            // Update button states
+            const buttons = document.querySelectorAll('[data-filter]');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            applyFavoritesFilter();
+        }
+        
+        function testFavoritesFilter() {
+            log('=== Testing Favorites Filter Functionality ===');
+            
+            // Test 1: Check if favorites filter exists in main page
+            const favoritesButton = document.querySelector('[data-filter="favorites"]');
+            if (favoritesButton) {
+                log('✅ Favorites filter button found in main page', 'ok');
+            } else {
+                log('❌ Favorites filter button NOT found in main page', 'error');
+            }
+            
+            // Test 2: Check authentication status
+            const authStatus = typeof window.isAuthenticated !== 'undefined' ? window.isAuthenticated : false;
+            log(`Authentication status: ${authStatus ? 'Authenticated' : 'Guest'}`, authStatus ? 'ok' : 'info');
+            
+            // Test 3: Check if favorite buttons exist on cards
+            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+            log(`Found ${favoriteButtons.length} favorite buttons on studio cards`, favoriteButtons.length > 0 ? 'ok' : 'info');
+            
+            // Test 4: Check localStorage for favorites
+            try {
+                const userId = authStatus ? 'test-user' : 'guest';
+                const favoritesKey = `museek:favorites:${userId}`;
+                const storedFavorites = localStorage.getItem(favoritesKey);
+                log(`Stored favorites for ${userId}: ${storedFavorites || 'none'}`, 'info');
+            } catch (e) {
+                log('Error checking localStorage: ' + e.message, 'error');
+            }
+            
+            log('=== Test Complete ===');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Favorites Filter Test initialized');
+            simulateGuestUser(); // Start with guest user
+        });
+    </script>
+</body>
+</html>

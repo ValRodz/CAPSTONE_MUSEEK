@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Slider Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .dual-range { position: relative; height: 36px; margin-top: 6px; }
+        .dual-range input[type=range] {
+            -webkit-appearance: none; appearance: none; position: absolute; left: 0; right: 0;
+            top: 12px; height: 6px; background: #1e1e1e; border-radius: 6px; outline: none;
+        }
+        .dual-range input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: #e50914; border: 2px solid #ffffff; cursor: pointer;
+            position: relative; z-index: 3;
+        }
+        .filters-range-fill {
+            position: absolute; top: 14px; height: 2px; background: #e50914; border-radius: 2px; z-index: 2;
+            left: 0; width: 0;
+        }
+        .filters-price-bubble {
+            position: absolute; top: -10px; transform: translateX(-50%);
+            background: #0f0f0f; color: #ffffff; border: 1px solid #2a2a2a; border-radius: 8px;
+            padding: 2px 6px; font-size: 12px; white-space: nowrap; z-index: 5;
+        }
+        #testOutput { margin-top: 20px; padding: 10px; background: #f0f0f0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Price Slider Functionality Test</h1>
+    
+    <div class="test-container">
+        <h3>Test the Price Slider</h3>
+        <label>Price Range: <span id="testPriceRangeLabel">₱0 - ₱5000</span></label>
+        <div class="dual-range">
+            <div id="testRangeFill" class="filters-range-fill"></div>
+            <input type="range" id="testPriceMin" min="0" max="5000" step="50" value="0" />
+            <input type="range" id="testPriceMax" min="0" max="5000" step="50" value="5000" />
+            <div id="testMinBubble" class="filters-price-bubble">₱<span id="testMinBubbleValue">0</span></div>
+            <div id="testMaxBubble" class="filters-price-bubble">₱<span id="testMaxBubbleValue">5000</span></div>
+        </div>
+        <button onclick="testSlider()">Test Slider Functionality</button>
+        <button onclick="resetSlider()">Reset</button>
+    </div>
+    
+    <div id="testOutput"></div>
+    
+    <script>
+        // Test the price slider functionality
+        function testSlider() {
+            const output = document.getElementById('testOutput');
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            const minBubble = document.getElementById('testMinBubble');
+            const maxBubble = document.getElementById('testMaxBubble');
+            const minBubbleValue = document.getElementById('testMinBubbleValue');
+            const maxBubbleValue = document.getElementById('testMaxBubbleValue');
+            const rangeFill = document.getElementById('testRangeFill');
+            const rangeLabel = document.getElementById('testPriceRangeLabel');
+            
+            function clamp(val, min, max) { 
+                return Math.min(max, Math.max(min, val)); 
+            }
+            
+            function updateSliderUI() {
+                if (!minInput || !maxInput) return;
+                
+                const min = parseFloat(minInput.min || '0');
+                const max = parseFloat(maxInput.max || '5000');
+                const step = parseFloat(minInput.step || '1');
+                let minVal = parseFloat(minInput.value || String(min));
+                let maxVal = parseFloat(maxInput.value || String(max));
+                
+                // Ensure max is always greater than min
+                if (maxVal <= minVal + step) { 
+                    maxVal = minVal + step; 
+                    maxInput.value = String(maxVal); 
+                }
+                
+                minVal = clamp(minVal, min, max);
+                maxVal = clamp(maxVal, min, max);
+                
+                const pctMin = ((minVal - min) / (max - min)) * 100;
+                const pctMax = ((maxVal - min) / (max - min)) * 100;
+                
+                if (rangeFill) { 
+                    rangeFill.style.left = pctMin + '%'; 
+                    rangeFill.style.width = (pctMax - pctMin) + '%'; 
+                }
+                if (minBubble) minBubble.style.left = pctMin + '%';
+                if (maxBubble) maxBubble.style.left = pctMax + '%';
+                if (minBubbleValue) minBubbleValue.textContent = String(Math.round(minVal));
+                if (maxBubbleValue) maxBubbleValue.textContent = String(Math.round(maxVal));
+                if (rangeLabel) rangeLabel.textContent = `₱${Math.round(minVal)} - ₱${Math.round(maxVal)}`;
+                
+                output.innerHTML += `<br>Updated: Min=₱${minVal}, Max=₱${maxVal}, Range=${pctMin.toFixed(1)}%-${pctMax.toFixed(1)}%`;
+            }
+            
+            // Add event listeners
+            minInput.addEventListener('input', updateSliderUI);
+            maxInput.addEventListener('input', updateSliderUI);
+            
+            output.innerHTML = 'Slider test initialized!<br>';
+            output.innerHTML += `Initial values: Min=₱${minInput.value}, Max=₱${maxInput.value}<br>`;
+            
+            // Test the update function
+            updateSliderUI();
+        }
+        
+        function resetSlider() {
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            minInput.value = 0;
+            maxInput.value = 5000;
+            testSlider();
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, initializing slider test...');
+            testSlider();
+        });
+    </script>
+</body>
+</html>

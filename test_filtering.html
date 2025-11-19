@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Price Filtering</title>
+    <style>
+        .test-card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            display: inline-block;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Price Filtering Test</h1>
+    
+    <div>
+        <label>Price Min: <input type="range" id="testPriceMin" min="0" max="5000" value="0"></label>
+        <span id="testPriceMinLabel">0</span>
+    </div>
+    <div>
+        <label>Price Max: <input type="range" id="testPriceMax" min="0" max="5000" value="5000"></label>
+        <span id="testPriceMaxLabel">5000</span>
+    </div>
+    
+    <button onclick="testFiltering()">Test Filtering</button>
+    <button onclick="resetTest()">Reset</button>
+    
+    <div id="testResults"></div>
+    
+    <script>
+        // Test data similar to what would come from PHP
+        const testStudios = [
+            { id: 1, name: "Studio A", min_price: 1000, rating: 4.5 },
+            { id: 2, name: "Studio B", min_price: 2500, rating: 3.8 },
+            { id: 3, name: "Studio C", min_price: null, rating: 4.2 }, // No services
+            { id: 4, name: "Studio D", min_price: 800, rating: 4.9 },
+            { id: 5, name: "Studio E", min_price: 3500, rating: 3.5 }
+        ];
+        
+        function createTestCards() {
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+            
+            testStudios.forEach(studio => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.dataset.studioId = studio.id;
+                card.dataset.minPrice = studio.min_price || '';
+                card.dataset.rating = studio.rating || '';
+                card.innerHTML = `
+                    <h3>${studio.name}</h3>
+                    <p>Price: ${studio.min_price ? '₱' + studio.min_price : 'No services'}</p>
+                    <p>Rating: ${studio.rating}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function testFiltering() {
+            const priceMin = parseFloat(document.getElementById('testPriceMin').value);
+            const priceMax = parseFloat(document.getElementById('testPriceMax').value);
+            
+            console.log('Testing with:', { priceMin, priceMax });
+            
+            const cards = document.querySelectorAll('.test-card');
+            cards.forEach((card, index) => {
+                const minPrice = card.dataset.minPrice !== '' ? parseFloat(card.dataset.minPrice) : null;
+                const hasServices = minPrice !== null;
+                
+                const priceOk = (
+                    (priceMin === null || (minPrice !== null && minPrice >= priceMin)) &&
+                    (priceMax === null || (minPrice !== null && minPrice <= priceMax))
+                );
+                
+                const shouldShow = hasServices && priceOk;
+                
+                console.log(`Card ${index + 1}:`, {
+                    minPrice,
+                    hasServices,
+                    priceOk,
+                    shouldShow
+                });
+                
+                card.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        function resetTest() {
+            document.getElementById('testPriceMin').value = 0;
+            document.getElementById('testPriceMax').value = 5000;
+            updateLabels();
+            createTestCards();
+        }
+        
+        function updateLabels() {
+            document.getElementById('testPriceMinLabel').textContent = document.getElementById('testPriceMin').value;
+            document.getElementById('testPriceMaxLabel').textContent = document.getElementById('testPriceMax').value;
+        }
+        
+        // Initialize
+        document.getElementById('testPriceMin').addEventListener('input', updateLabels);
+        document.getElementById('testPriceMax').addEventListener('input', updateLabels);
+        createTestCards();
+        updateLabels();
+    </script>
+</body>
+</html>

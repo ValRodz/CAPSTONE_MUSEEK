@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Slider Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .test-container { margin: 20px 0; padding: 20px; border: 1px solid #333; background: #222; }
+        .dual-range { position: relative; height: 36px; margin-top: 6px; }
+        .dual-range input[type=range] {
+            -webkit-appearance: none; appearance: none; position: absolute; left: 0; right: 0;
+            top: 12px; height: 6px; background: #1e1e1e; border-radius: 6px; outline: none;
+        }
+        .dual-range input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: #e50914; border: 2px solid #ffffff; cursor: pointer;
+            position: relative; z-index: 3;
+        }
+        #filterPriceMin { z-index: 3; }
+        #filterPriceMax { z-index: 4; }
+        .filters-range-fill {
+            position: absolute; top: 14px; height: 2px; background: #e50914; border-radius: 2px; z-index: 2;
+            left: 0; width: 0;
+            transition: left 0.2s ease, width 0.2s ease;
+        }
+        .filters-price-bubble {
+            position: absolute; top: -10px; transform: translateX(-50%);
+            background: #0f0f0f; color: #ffffff; border: 1px solid #2a2a2a; border-radius: 8px;
+            padding: 2px 6px; font-size: 12px; white-space: nowrap; z-index: 5;
+            transition: left 0.2s ease;
+        }
+        #testOutput { margin-top: 20px; padding: 10px; background: #000; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        .status { padding: 5px; margin: 5px 0; border-radius: 4px; }
+        .status.ok { background: #004400; }
+        .status.error { background: #440000; }
+        button { padding: 8px 16px; margin: 5px; background: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #f50919; }
+    </style>
+</head>
+<body>
+    <h1>Price Slider Debug Test</h1>
+    
+    <div class="test-container">
+        <h3>Test the Price Slider (Standalone)</h3>
+        <p>This tests the price slider functionality independently of the main page.</p>
+        
+        <label>Price Range: <span id="testPriceRangeLabel">₱0 - ₱5000</span></label>
+        <div class="dual-range" id="testDualRange">
+            <div id="testRangeFill" class="filters-range-fill"></div>
+            <input type="range" id="testPriceMin" min="0" max="5000" step="50" value="0" />
+            <input type="range" id="testPriceMax" min="0" max="5000" step="50" value="5000" />
+            <div id="testMinBubble" class="filters-price-bubble">₱<span id="testMinBubbleValue">0</span></div>
+            <div id="testMaxBubble" class="filters-price-bubble">₱<span id="testMaxBubbleValue">5000</span></div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="testSlider()">Test Slider Functionality</button>
+            <button onclick="resetSlider()">Reset Values</button>
+            <button onclick="checkElements()">Check Elements</button>
+            <button onclick="simulateNoAuth()">Simulate Non-Auth User</button>
+        </div>
+    </div>
+    
+    <div id="testOutput"></div>
+    
+    <script>
+        let testResults = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push({ time: timestamp, message: message, type: type });
+            updateOutput();
+        }
+        
+        function updateOutput() {
+            const output = document.getElementById('testOutput');
+            output.innerHTML = testResults.map(result => 
+                `<div class="status ${result.type}">[${result.time}] ${result.message}</div>`
+            ).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clamp(val, min, max) { 
+            return Math.min(max, Math.max(min, val)); 
+        }
+        
+        function updateTestSliderUI() {
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            const rangeFill = document.getElementById('testRangeFill');
+            const minBubble = document.getElementById('testMinBubble');
+            const maxBubble = document.getElementById('testMaxBubble');
+            const minBubbleValue = document.getElementById('testMinBubbleValue');
+            const maxBubbleValue = document.getElementById('testMaxBubbleValue');
+            const rangeLabel = document.getElementById('testPriceRangeLabel');
+            
+            if (!minInput || !maxInput) {
+                log('ERROR: Price input elements not found', 'error');
+                return false;
+            }
+            
+            const min = parseFloat(minInput.min || '0');
+            const max = parseFloat(maxInput.max || '5000');
+            const step = parseFloat(minInput.step || '1');
+            let minVal = parseFloat(minInput.value || String(min));
+            let maxVal = parseFloat(maxInput.value || String(max));
+            
+            if (maxVal <= minVal + step) { 
+                maxVal = minVal + step; 
+                maxInput.value = String(maxVal); 
+            }
+            
+            minVal = clamp(minVal, min, max);
+            maxVal = clamp(maxVal, min, max);
+            
+            const pctMin = ((minVal - min) / (max - min)) * 100;
+            const pctMax = ((maxVal - min) / (max - min)) * 100;
+            
+            if (rangeFill) { 
+                rangeFill.style.left = pctMin + '%'; 
+                rangeFill.style.width = (pctMax - pctMin) + '%'; 
+            }
+            if (minBubble) {
+                minBubble.style.left = pctMin + '%';
+            }
+            if (maxBubble) {
+                maxBubble.style.left = pctMax + '%';
+            }
+            if (minBubbleValue) minBubbleValue.textContent = String(Math.round(minVal));
+            if (maxBubbleValue) maxBubbleValue.textContent = String(Math.round(maxVal));
+            if (rangeLabel) rangeLabel.textContent = `₱${Math.round(minVal)} - ₱${Math.round(maxVal)}`;
+            
+            log(`Updated: Min=₱${minVal}, Max=₱${maxVal}, Range=${pctMin.toFixed(1)}%-${pctMax.toFixed(1)}%`);
+            return true;
+        }
+        
+        function testSlider() {
+            log('=== Starting Price Slider Test ===');
+            
+            const success = updateTestSliderUI();
+            if (success) {
+                log('✅ Price slider test completed successfully', 'ok');
+            } else {
+                log('❌ Price slider test failed', 'error');
+            }
+        }
+        
+        function resetSlider() {
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            minInput.value = 0;
+            maxInput.value = 5000;
+            log('Reset slider values to 0-5000');
+            updateTestSliderUI();
+        }
+        
+        function checkElements() {
+            log('=== Checking Price Slider Elements ===');
+            
+            const elements = {
+                'testPriceMin': document.getElementById('testPriceMin'),
+                'testPriceMax': document.getElementById('testPriceMax'),
+                'testRangeFill': document.getElementById('testRangeFill'),
+                'testMinBubble': document.getElementById('testMinBubble'),
+                'testMaxBubble': document.getElementById('testMaxBubble'),
+                'testMinBubbleValue': document.getElementById('testMinBubbleValue'),
+                'testMaxBubbleValue': document.getElementById('testMaxBubbleValue'),
+                'testPriceRangeLabel': document.getElementById('testPriceRangeLabel')
+            };
+            
+            let allFound = true;
+            for (const [name, element] of Object.entries(elements)) {
+                if (element) {
+                    log(`✅ ${name}: Found`, 'ok');
+                } else {
+                    log(`❌ ${name}: NOT FOUND`, 'error');
+                    allFound = false;
+                }
+            }
+            
+            if (allFound) {
+                log('✅ All price slider elements found successfully', 'ok');
+            } else {
+                log('❌ Some price slider elements are missing', 'error');
+            }
+            
+            return allFound;
+        }
+        
+        function simulateNoAuth() {
+            log('=== Simulating Non-Authenticated User ===');
+            log('This simulates the scenario where user is not logged in');
+            log('Price slider should work regardless of authentication status');
+            
+            // Test with different values to simulate filtering
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            
+            // Set some test values
+            minInput.value = 1000;
+            maxInput.value = 3000;
+            
+            const success = updateTestSliderUI();
+            if (success) {
+                log('✅ Non-authenticated user simulation completed', 'ok');
+            } else {
+                log('❌ Non-authenticated user simulation failed', 'error');
+            }
+        }
+        
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Price Slider Debug Test initialized');
+            
+            const minInput = document.getElementById('testPriceMin');
+            const maxInput = document.getElementById('testPriceMax');
+            
+            if (minInput && maxInput) {
+                minInput.addEventListener('input', updateTestSliderUI);
+                maxInput.addEventListener('input', updateTestSliderUI);
+                log('✅ Event listeners attached successfully', 'ok');
+            } else {
+                log('❌ Could not attach event listeners - elements not found', 'error');
+            }
+            
+            // Run initial test
+            setTimeout(() => {
+                checkElements();
+                testSlider();
+            }, 100);
+        });
+        
+        // Global debug function
+        window.debugPriceSliderTest = function() {
+            log('=== Manual Debug Triggered ===');
+            checkElements();
+            testSlider();
+        };
+    </script>
+</body>
+</html>

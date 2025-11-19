@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Filtering Issue Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .issue { background: #ffe0e0; padding: 10px; margin: 10px 0; border-left: 4px solid red; }
+        .solution { background: #e0ffe0; padding: 10px; margin: 10px 0; border-left: 4px solid green; }
+        .code { background: #f0f0f0; padding: 10px; font-family: monospace; white-space: pre; }
+    </style>
+</head>
+<body>
+    <h1>Price Filtering Issue Analysis</h1>
+    
+    <h2>Identified Issues:</h2>
+    
+    <div class="issue">
+        <h3>Issue 1: Zero Price Handling</h3>
+        <p>The current logic has a problem with studios that have services priced at ₱0:</p>
+        <div class="code">const hasServices = minPrice !== null;
+const priceOk = (
+    (priceMin === null || (minPrice !== null && minPrice >= priceMin)) &&
+    (priceMax === null || (minPrice !== null && minPrice <= priceMax))
+);</div>
+        <p><strong>Problem:</strong> When minPrice is 0, the condition <code>minPrice >= priceMin</code> might not work as expected if priceMin is also 0.</p>
+    </div>
+    
+    <div class="issue">
+        <h3>Issue 2: Price Range Edge Cases</h3>
+        <p>The filtering logic doesn't properly handle edge cases where:</p>
+        <ul>
+            <li>A studio has services priced at ₱0</li>
+            <li>Price range minimum is set to ₱0</li>
+            <li>Price range maximum is set to a very low value</li>
+        </ul>
+    </div>
+    
+    <h2>Proposed Solutions:</h2>
+    
+    <div class="solution">
+        <h3>Solution 1: Fix Zero Price Comparison</h3>
+        <p>Update the price filtering logic to properly handle zero prices:</p>
+        <div class="code">const hasServices = minPrice !== null;
+const priceOk = (
+    (priceMin === null || (hasServices && minPrice >= priceMin)) &&
+    (priceMax === null || (hasServices && minPrice <= priceMax))
+);</div>
+    </div>
+    
+    <div class="solution">
+        <h3>Solution 2: Add Better Debugging</h3>
+        <p>Add comprehensive debugging to track price filtering issues:</p>
+        <div class="code">// Debug: Log detailed price filtering information
+console.log('Price filtering debug:', {
+    studioId: id,
+    minPrice: minPrice,
+    hasServices: hasServices,
+    priceMin: priceMin,
+    priceMax: priceMax,
+    priceMinCondition: priceMin === null || (hasServices && minPrice >= priceMin),
+    priceMaxCondition: priceMax === null || (hasServices && minPrice <= priceMax),
+    finalPriceOk: priceOk,
+    shouldShow: hasServices && priceOk
+});</div>
+    </div>
+    
+    <h2>Test Cases to Verify:</h2>
+    <ul>
+        <li>Studio with ₱0 services, price range ₱0-₱5000 → Should show</li>
+        <li>Studio with ₱1000 services, price range ₱500-₱1500 → Should show</li>
+        <li>Studio with ₱1000 services, price range ₱1500-₱2000 → Should hide</li>
+        <li>Studio with no services (null price) → Should hide</li>
+        <li>Studio with ₱5000 services, price range ₱0-₱5000 → Should show</li>
+    </ul>
+    
+    <h2>Next Steps:</h2>
+    <ol>
+        <li>Update the price filtering logic in both grid and map views</li>
+        <li>Add comprehensive debugging output</li>
+        <li>Test with various price ranges and studio prices</li>
+        <li>Verify that studios without services are properly excluded</li>
+    </ol>
+</body>
+</html>

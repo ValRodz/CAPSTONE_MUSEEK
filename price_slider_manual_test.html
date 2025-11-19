@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Slider Manual Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #output { margin-top: 20px; padding: 10px; background: #f8f9fa; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Price Slider Manual Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Price Slider from Browser Console</h3>
+        <p>Open the browser console and run these commands to test the price slider:</p>
+        
+        <button onclick="runTests()">Run Automated Tests</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+        }
+        
+        function runTests() {
+            clearOutput();
+            log('=== Starting Price Slider Tests ===');
+            
+            // Test 1: Check if debug function exists
+            log('Test 1: Checking if debugPriceSlider function exists...');
+            if (typeof window.debugPriceSlider === 'function') {
+                log('✅ debugPriceSlider function found');
+                try {
+                    window.debugPriceSlider();
+                    log('✅ debugPriceSlider executed successfully');
+                } catch (error) {
+                    log('❌ Error calling debugPriceSlider: ' + error.message);
+                }
+            } else {
+                log('❌ debugPriceSlider function not found');
+                log('Available functions: ' + Object.keys(window).filter(key => key.includes('debug')).join(', '));
+            }
+            
+            // Test 2: Check price slider elements
+            log('\nTest 2: Checking price slider elements...');
+            const elements = {
+                'filterPriceMin': document.getElementById('filterPriceMin'),
+                'filterPriceMax': document.getElementById('filterPriceMax'),
+                'filtersRangeFill': document.getElementById('filtersRangeFill'),
+                'filterPriceMinBubble': document.getElementById('filterPriceMinBubble'),
+                'filterPriceMaxBubble': document.getElementById('filterPriceMaxBubble'),
+                'priceMinLabel': document.getElementById('priceMinLabel'),
+                'priceMaxLabel': document.getElementById('priceMaxLabel')
+            };
+            
+            for (const [name, element] of Object.entries(elements)) {
+                log(`${name}: ${element ? 'FOUND' : 'NOT FOUND'}`);
+            }
+            
+            // Test 3: Check if updatePriceUI exists
+            log('\nTest 3: Checking if updatePriceUI function exists...');
+            if (typeof window.updatePriceUI === 'function') {
+                log('✅ updatePriceUI function found');
+            } else {
+                log('❌ updatePriceUI function not found');
+            }
+            
+            // Test 4: Check current values
+            log('\nTest 4: Checking current price values...');
+            const minInput = document.getElementById('filterPriceMin');
+            const maxInput = document.getElementById('filterPriceMax');
+            if (minInput && maxInput) {
+                log(`Current values: Min=₱${minInput.value}, Max=₱${maxInput.value}`);
+            } else {
+                log('❌ Cannot read price input values');
+            }
+            
+            log('\n=== Tests Completed ===');
+            log('To manually test: Open console and run: debugPriceSlider()');
+        }
+        
+        // Provide manual test commands
+        const manualTests = `
+MANUAL TEST COMMANDS (run in browser console):
+
+1. Check debug function:
+   debugPriceSlider()
+
+2. Check price slider elements:
+   document.getElementById('filterPriceMin')
+   document.getElementById('filterPriceMax')
+   document.getElementById('filtersRangeFill')
+
+3. Check current values:
+   document.getElementById('filterPriceMin').value
+   document.getElementById('filterPriceMax').value
+
+4. Test price slider manually:
+   document.getElementById('filterPriceMin').value = 1000
+   document.getElementById('filterPriceMax').value = 3000
+   updatePriceUI()
+
+5. Check for errors:
+   window.addEventListener('error', (e) => console.log('ERROR:', e.message))
+`;
+        
+        log(manualTests);
+    </script>
+</body>
+</html>
